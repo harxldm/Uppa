@@ -1,0 +1,75 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    -webkit-tap-highlight-color: transparent;
+    box-sizing: border-box;
+  }
+
+  html, body, #root {
+    height: 100%;
+    width: 100%;
+    max-width: 480px;
+    margin: 0 auto;
+    overflow-x: hidden;
+  }
+
+  body {
+    background-color: #0a0f0d;
+    color: #f1f5f2;
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #22c55e33; border-radius: 2px; }
+}
+
+@layer components {
+  /* Glassmorphism card */
+  .glass-card {
+    @apply bg-surface-800 border border-white/5 rounded-2xl backdrop-blur-sm;
+  }
+
+  /* Nutri-Score pill */
+  .nutri-a { @apply bg-green-500 text-white; }
+  .nutri-b { @apply bg-lime-400 text-gray-900; }
+  .nutri-c { @apply bg-yellow-400 text-gray-900; }
+  .nutri-d { @apply bg-orange-500 text-white; }
+  .nutri-e { @apply bg-red-600 text-white; }
+  .nutri-unknown { @apply bg-gray-600 text-gray-300; }
+
+  /* QR reader iframe override */
+  #qr-reader video {
+    border-radius: 16px !important;
+    width: 100% !important;
+  }
+  #qr-reader {
+    border: none !important;
+    padding: 0 !important;
+  }
+  #qr-reader__scan_region {
+    border: none !important;
+  }
+  #qr-reader__dashboard {
+    @apply bg-surface-700 rounded-xl p-3 mt-2;
+  }
+  #qr-reader__dashboard_section_csr button {
+    @apply bg-brand-500 text-white rounded-lg px-4 py-2 text-sm font-semibold;
+  }
+}
+
+@layer utilities {
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 1rem);
+  }
+  .safe-top {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+}
