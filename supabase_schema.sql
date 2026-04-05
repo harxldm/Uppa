@@ -102,3 +102,40 @@ create policy "Users update own preferences"
   for update
   using (auth.uid() = user_id);
 
+-- ------------------------------------------------------------
+-- TABLE: global_products (CROWDSOURCED DB)
+-- ------------------------------------------------------------
+create table if not exists public.global_products (
+  barcode            text primary key,
+  name               text not null,
+  brand              text,
+  image_url          text,
+  nutriscore         char(1),
+  approximate_price  numeric(10, 2),
+  created_by         uuid references auth.users(id) on delete set null,
+  created_at         timestamptz not null default now(),
+  updated_at         timestamptz not null default now()
+);
+
+-- ------------------------------------------------------------
+-- ROW LEVEL SECURITY: global_products
+-- ------------------------------------------------------------
+alter table public.global_products enable row level security;
+
+-- Everyone logged in can read the global catalog
+create policy "Anyone can read global products"
+  on public.global_products
+  for select
+  using (auth.role() = 'authenticated');
+
+-- Everyone logged in can insert to the global catalog
+create policy "Anyone can insert global products"
+  on public.global_products
+  for insert
+  with check (auth.role() = 'authenticated');
+
+-- Everyone logged in can update existing products (to update the price)
+create policy "Anyone can update global products"
+  on public.global_products
+  for update
+  using (auth.role() = 'authenticated');

@@ -15,6 +15,28 @@ export async function addShoppingItem(item) {
     .single()
 
   if (error) throw error
+
+  // --- CROWDSOURCING ---
+  if (item.barcode) {
+    const { error: globalError } = await supabase
+      .from('global_products')
+      .upsert({
+        barcode: item.barcode,
+        name: item.product_name,
+        brand: item.brand || null,
+        image_url: item.image_url || null,
+        nutriscore: item.nutriscore || null,
+        approximate_price: item.price > 0 ? item.price : null,
+        created_by: user?.id ?? null,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'barcode' })
+
+    if (globalError) {
+      console.error('[Crowdsourcing] Error:', globalError)
+      alert('Error en BD colaborativa: ' + globalError.message)
+    }
+  }
+
   return data
 }
 

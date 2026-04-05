@@ -4,6 +4,7 @@ import ProductCard    from './components/ProductCard'
 import ShoppingListItem from './components/ShoppingListItem'
 import LoginScreen    from './components/LoginScreen'
 import OnboardingScreen from './components/OnboardingScreen'
+import Sidebar        from './components/Sidebar'
 import { fetchProduct } from './services/openFoodFacts'
 import { fetchTodayItems, addShoppingItem } from './services/shoppingList'
 import { fetchUserPreferences, signOut } from './services/auth'
@@ -14,6 +15,7 @@ const VIEW = {
   HOME:    'HOME',
   SCANNER: 'SCANNER',
   PRODUCT: 'PRODUCT',
+  MANUAL:  'MANUAL',
 }
 
 // ── Master Component ───────────────────────────────────────────────────────
@@ -90,24 +92,19 @@ export default function App() {
   }
 
   // 3. Logged in and configured -> Main App
-  return <MainApp preferences={preferences} />
+  return <MainApp preferences={preferences} onPrefsUpdate={setPreferences} />
 }
 
 // ── Sub-component for the Core Logic ───────────────────────────────────────
-function MainApp({ preferences = { currency: 'MXN' } }) {
-  const [view, setView]       = useState(VIEW.HOME)
-  const [product, setProduct] = useState(null)
-  const [items, setItems]     = useState([])
+function MainApp({ preferences = { currency: 'MXN' }, onPrefsUpdate }) {
+  const [view, setView]             = useState(VIEW.HOME)
+  const [product, setProduct]       = useState(null)
+  const [items, setItems]           = useState([])
   const [loadingProduct, setLoadingProduct] = useState(false)
-  const [scanError, setScanError]           = useState(null)
+  const [scanError, setScanError]   = useState(null)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const currencySymbol = preferences.currency === 'EUR' ? '€' : '$'
-
-  const handleLogout = () => {
-    if (window.confirm('¿Deseas cerrar sesión?')) {
-      signOut()
-    }
-  }
 
   // Load today's list on mount
   useEffect(() => {
@@ -127,7 +124,7 @@ function MainApp({ preferences = { currency: 'MXN' } }) {
     if (loadingProduct) return
     setLoadingProduct(true)
     setScanError(null)
-    setView(VIEW.HOME) 
+    setView(VIEW.HOME)
 
     try {
       const p = await fetchProduct(barcode)
@@ -135,7 +132,9 @@ function MainApp({ preferences = { currency: 'MXN' } }) {
         setProduct(p)
         setView(VIEW.PRODUCT)
       } else {
-        setScanError(`Producto con código ${barcode} no encontrado en la base de datos.`)
+        // Not found in any API → open manual entry with the barcode pre-filled
+        setProduct({ barcode, name: '', brand: '', imageUrl: null, nutriScore: null, isManual: true })
+        setView(VIEW.MANUAL)
       }
     } catch {
       setScanError('Error al buscar el producto. Revisa tu conexión.')
@@ -161,17 +160,48 @@ function MainApp({ preferences = { currency: 'MXN' } }) {
 
   return (
     <div className="min-h-screen bg-surface-900 flex flex-col safe-top">
+
+      {/* ── Sidebar ── */}
+      <Sidebar
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        preferences={preferences}
+        onPrefsUpdate={onPrefsUpdate}
+      />
+
       {/* ── Header / Budget Counter ── */}
       <header className="sticky top-0 z-20 bg-surface-900/95 backdrop-blur-md border-b border-white/5 px-4 py-4">
         <div className="flex items-center justify-between">
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl font-extrabold tracking-tight" onClick={handleLogout}>
+          <div className="flex items-center gap-3">
+            {/* Menu button */}
+            <button
+              onClick={() => setSidebarOpen(true)}
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 10,
+                border: '1px solid rgba(255,255,255,0.08)',
+                background: 'rgba(255,255,255,0.04)',
+                color: '#9ca3af',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                fontSize: 18,
+                flexShrink: 0,
+              }}
+              aria-label="Abrir menú"
+            >
+              ☰
+            </button>
+
+            <div>
+              <h1 className="text-xl font-extrabold tracking-tight">
                 <span className="text-brand-400">🛍</span>
                 <span className="text-white ml-2">Uppa</span>
               </h1>
+              <p className="text-xs text-gray-500 mt-0.5">Lista de hoy · {items.length} artículos</p>
             </div>
-            <p className="text-xs text-gray-500 mt-0.5">Lista de hoy · {items.length} artículos</p>
           </div>
 
           <div className="text-right">
@@ -217,12 +247,29 @@ function MainApp({ preferences = { currency: 'MXN' } }) {
           </div>
         )}
 
-        {view === VIEW.PRODUCT && product && (
+        {(view === VIEW.PRODUCT && product) && (
           <div className="fixed inset-0 z-30 bg-black/80 backdrop-blur-sm flex flex-col justify-end animate-fade-in">
             <div className="bg-surface-800 rounded-t-3xl p-5 animate-slide-up safe-bottom max-h-[90vh] overflow-y-auto">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="font-bold text-lg text-white">Producto escaneado</h2>
               </div>
+              <ProductCard
+                product={product}
+                currencySymbol={currencySymbol}
+                onSave={handleItemSaved}
+                onDismiss={() => { setView(VIEW.HOME); setProduct(null) }}
+              />
+            </div>
+          </div>
+        )}
+
+        {(view === VIEW.MANUAL && product) && (
+          <div className="fixed inset-0 z-30 bg-black/80 backdrop-blur-sm flex flex-col justify-end animate-fade-in">
+            <div className="bg-surface-800 rounded-t-3xl p-5 animate-slide-up safe-bottom max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between mb-1">
+                <h2 className="font-bold text-lg text-white">✏️ Ingresar producto</h2>
+              </div>
+              <p className="text-xs text-gray-500 mb-4">No encontramos este código. Escribe los datos del producto.</p>
               <ProductCard
                 product={product}
                 currencySymbol={currencySymbol}

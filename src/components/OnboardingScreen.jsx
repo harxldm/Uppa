@@ -2,7 +2,6 @@ import React, { useState } from 'react'
 import { updateUserPreferences } from '../services/auth'
 
 export default function OnboardingScreen({ onComplete }) {
-  const [currency, setCurrency] = useState('MXN')
   const [language, setLanguage] = useState('es')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
@@ -12,11 +11,11 @@ export default function OnboardingScreen({ onComplete }) {
     setError(null)
     try {
       await updateUserPreferences({
-        currency,
+        currency: 'COP',
         language,
         setup_completed: true
       })
-      onComplete({ currency, language, setup_completed: true })
+      onComplete({ currency: 'COP', language, setup_completed: true })
     } catch (err) {
       console.error(err)
       setError(err.message || 'Error al guardar configuración.')
@@ -39,34 +38,6 @@ export default function OnboardingScreen({ onComplete }) {
         </div>
 
         <div className="glass-card p-6 space-y-6 animate-slide-up">
-          {/* Currency Selection */}
-          <div>
-            <label className="block text-sm font-semibold text-white mb-3">
-              ¿Cuál es tu moneda local?
-            </label>
-            <div className="grid grid-cols-2 gap-3">
-              {[
-                { code: 'MXN', label: 'Peso (MXN)', symbol: '$' },
-                { code: 'USD', label: 'Dólar (USD)', symbol: '$' },
-                { code: 'EUR', label: 'Euro (EUR)', symbol: '€' },
-                { code: 'ARS', label: 'Peso (ARS)', symbol: '$' },
-              ].map(c => (
-                <button
-                  key={c.code}
-                  onClick={() => setCurrency(c.code)}
-                  className={`py-3 px-4 rounded-xl border text-sm font-medium transition-all flex flex-col items-center gap-1
-                    ${currency === c.code 
-                      ? 'bg-brand-500/20 border-brand-500 text-brand-400' 
-                      : 'bg-surface-800 border-white/5 text-gray-400 hover:bg-surface-700'
-                    }`}
-                >
-                  <span className="text-lg">{c.symbol}</span>
-                  <span>{c.code}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
           {/* Language Selection */}
           <div>
             <label className="block text-sm font-semibold text-white mb-3">
