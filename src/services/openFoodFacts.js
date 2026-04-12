@@ -32,7 +32,7 @@ async function fetchFromSupabase(barcode) {
 
 // ── Source 1: Open Food Facts ───────────────────────────────────────────────
 async function fetchFromOpenFoodFacts(barcode) {
-  const fields = 'product_name,brands,image_front_url,nutriscore_grade'
+  const fields = 'product_name,brands,image_front_url,nutriscore_grade,ingredients_text,nutriments'
   const res = await fetch(
     `https://world.openfoodfacts.org/api/v2/product/${barcode}.json?fields=${fields}`
   )
@@ -50,6 +50,13 @@ async function fetchFromOpenFoodFacts(barcode) {
     brand:      p.brands        || '',
     imageUrl:   p.image_front_url || null,
     nutriScore: (p.nutriscore_grade || '').toUpperCase() || null,
+    ingredients: p.ingredients_text || '',
+    nutriments: {
+      sugar:  p.nutriments?.sugars_100g,
+      salt:   p.nutriments?.salt_100g,
+      fat:    p.nutriments?.fat_100g,
+      energy: p.nutriments?.['energy-kcal_100g'],
+    },
     source:     'OpenFoodFacts',
   }
 }

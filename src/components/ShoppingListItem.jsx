@@ -4,7 +4,7 @@ import { deleteShoppingItem } from '../services/shoppingList'
 /**
  * ShoppingListItem — a single row in the shopping list.
  */
-export default function ShoppingListItem({ item, currencySymbol = '$', onDelete }) {
+export default function ShoppingListItem({ item, currencySymbol = '$', onDelete, readOnly = false, onClick }) {
   async function handleDelete() {
     try {
       await deleteShoppingItem(item.id)
@@ -17,7 +17,11 @@ export default function ShoppingListItem({ item, currencySymbol = '$', onDelete 
   const subtotal = (parseFloat(item.price) * (item.quantity || 1)).toFixed(2)
 
   return (
-    <div className="flex items-center gap-3 p-3 glass-card animate-fade-in group">
+    <div 
+      onClick={() => onClick && onClick(item)}
+      className={`flex items-center gap-3 p-3 glass-card animate-fade-in group active:scale-[0.98] transition-all
+        ${onClick ? 'cursor-pointer hover:border-brand-500/30' : ''}`}
+    >
       {/* Product thumbnail */}
       {item.image_url ? (
         <img
@@ -54,14 +58,16 @@ export default function ShoppingListItem({ item, currencySymbol = '$', onDelete 
       {/* Price + delete */}
       <div className="flex flex-col items-end gap-1 flex-shrink-0">
         <span className="text-sm font-bold text-brand-400">{currencySymbol}{subtotal}</span>
-        <button
-          onClick={handleDelete}
-          className="text-gray-600 hover:text-red-400 active:text-red-500
-                     transition-colors text-xs opacity-0 group-hover:opacity-100 p-1"
-          aria-label="Eliminar"
-        >
-          ✕
-        </button>
+        {!readOnly && (
+          <button
+            onClick={(e) => { e.stopPropagation(); handleDelete() }}
+            className="text-gray-600 hover:text-red-400 active:text-red-500
+                       transition-colors text-xs opacity-0 group-hover:opacity-100 p-1"
+            aria-label="Eliminar"
+          >
+            ✕
+          </button>
+        )}
       </div>
     </div>
   )

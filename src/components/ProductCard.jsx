@@ -23,39 +23,20 @@ export default function ProductCard({ product, currencySymbol = '$', onSave, onD
   const displayName  = isManual ? manualName  : product.name
   const displayBrand = isManual ? manualBrand : product.brand
 
-  async function handleSave() {
-    const numPrice = parseFloat(price) || 0
+  function handleSave() {
+    const numPrice   = parseFloat(price) || 0
     const finalName  = isManual ? manualName.trim()  : product.name
     const finalBrand = isManual ? manualBrand.trim() : product.brand
 
-    setSaving(true)
-    try {
-      const item = await addShoppingItem({
-        barcode:      product.barcode,
-        product_name: finalName  || 'Producto sin nombre',
-        brand:        finalBrand || '',
-        image_url:    product.imageUrl,
-        nutriscore:   product.nutriScore,
-        price:        numPrice,
-        quantity,
-      })
-      onSave(item)
-    } catch (err) {
-      console.error('[ProductCard] save error:', err)
-      onSave({
-        id:           crypto.randomUUID(),
-        barcode:      product.barcode,
-        product_name: finalName  || 'Producto sin nombre',
-        brand:        finalBrand || '',
-        image_url:    product.imageUrl,
-        nutriscore:   product.nutriScore,
-        price:        numPrice,
-        quantity,
-        created_at:   new Date().toISOString(),
-      })
-    } finally {
-      setSaving(false)
-    }
+    onSave({
+      barcode:      product.barcode,
+      product_name: finalName  || 'Producto sin nombre',
+      brand:        finalBrand || '',
+      image_url:    product.imageUrl,
+      nutriscore:   product.nutriScore,
+      price:        numPrice,
+      quantity,
+    })
   }
 
   return (

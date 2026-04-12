@@ -7,7 +7,7 @@ const LANGUAGES = [
   { code: 'en', label: 'English', flag: '🇺🇸' },
 ]
 
-export default function Sidebar({ isOpen, onClose, preferences, onPrefsUpdate }) {
+export default function Sidebar({ isOpen, onClose, preferences, onPrefsUpdate, onOpenAiSettings }) {
   const [language, setLanguage] = useState(preferences?.language || 'es')
   const [saving, setSaving]     = useState(false)
   const [saved, setSaved]       = useState(false)
@@ -264,6 +264,81 @@ export default function Sidebar({ isOpen, onClose, preferences, onPrefsUpdate })
           <div
             style={{
               margin: '28px 0 24px',
+              height: 1,
+              background: 'rgba(255,255,255,0.06)',
+            }}
+          />
+
+          {/* Section: Funciones Pro */}
+          <p
+            style={{
+              fontSize: 10,
+              fontWeight: 700,
+              letterSpacing: '0.12em',
+              textTransform: 'uppercase',
+              color: '#4b5563',
+              marginBottom: 16,
+            }}
+          >
+            Funciones Pro
+          </p>
+
+          <button
+            onClick={() => { onClose(); onOpenAiSettings && onOpenAiSettings() }}
+            style={{
+              width: '100%',
+              padding: '16px 18px',
+              borderRadius: 16,
+              border: '1px solid rgba(167,139,250,0.20)',
+              background: 'rgba(167,139,250,0.06)',
+              cursor: 'pointer',
+              transition: 'all 0.25s ease',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 14,
+              textAlign: 'left',
+              marginBottom: 8,
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.background = 'rgba(167,139,250,0.12)'
+              e.currentTarget.style.borderColor = 'rgba(167,139,250,0.35)'
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.background = 'rgba(167,139,250,0.06)'
+              e.currentTarget.style.borderColor = 'rgba(167,139,250,0.20)'
+            }}
+          >
+            <div
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 14,
+                background: 'linear-gradient(135deg, rgba(139,92,246,0.15), rgba(167,139,250,0.08))',
+                border: '1px solid rgba(167,139,250,0.20)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 20,
+                flexShrink: 0,
+              }}
+            >
+              ✨
+            </div>
+            <div>
+              <p style={{ fontSize: 14, fontWeight: 800, color: '#a78bfa', marginBottom: 2 }}>
+                IA
+              </p>
+              <p style={{ fontSize: 11, color: '#6b7280', margin: 0, lineHeight: 1.3 }}>
+                Configura tu asesor nutricional
+              </p>
+            </div>
+            <span style={{ marginLeft: 'auto', fontSize: 14, color: '#4b5563' }}>❯</span>
+          </button>
+
+          {/* Divider */}
+          <div
+            style={{
+              margin: '20px 0 24px',
               height: 1,
               background: 'rgba(255,255,255,0.06)',
             }}
