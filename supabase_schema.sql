@@ -89,12 +89,14 @@ create policy "Users delete own items"
 -- TABLE: user_preferences
 -- ------------------------------------------------------------
 create table if not exists public.user_preferences (
-  user_id             uuid primary key references auth.users(id) on delete cascade,
-  currency            text not null default 'COP',
-  language            text not null default 'es',
-  ai_detail_level     integer not null default 2,
-  setup_completed     boolean not null default false,
-  updated_at          timestamptz not null default now()
+  user_id                 uuid primary key references auth.users(id) on delete cascade,
+  currency                text not null default 'COP',
+  language                text not null default 'es',
+  ai_detail_level         integer not null default 2,
+  ai_strictness_level     integer not null default 1,
+  ai_onboarding_completed boolean not null default false,
+  setup_completed         boolean not null default false,
+  updated_at              timestamptz not null default now()
 );
 
 alter table public.user_preferences enable row level security;

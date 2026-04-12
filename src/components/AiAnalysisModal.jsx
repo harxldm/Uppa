@@ -6,7 +6,7 @@ import { getProductAnalysis } from '../services/aiAdvisor'
  * Enhanced product detail modal that shows instant nutritional data 
  * and a premium AI advisor section with loading states.
  */
-export default function AiAnalysisModal({ product, onClose, aiDetailLevel = 2 }) {
+export default function AiAnalysisModal({ product, onClose, aiDetailLevel = 2, aiStrictnessLevel = 1 }) {
   const [loadingAi, setLoadingAi] = useState(true)
   const [aiError, setAiError] = useState(null)
   const [analysis, setAnalysis] = useState(null)
@@ -16,7 +16,7 @@ export default function AiAnalysisModal({ product, onClose, aiDetailLevel = 2 })
       try {
         setLoadingAi(true)
         setAiError(null)
-        const data = await getProductAnalysis(product, aiDetailLevel)
+        const data = await getProductAnalysis(product, aiDetailLevel, aiStrictnessLevel)
         setAnalysis(data)
       } catch (err) {
         setAiError(err.message)

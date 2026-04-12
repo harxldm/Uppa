@@ -2,29 +2,40 @@ import { supabase } from '../lib/supabaseClient'
 import { fetchProduct } from './openFoodFacts'
 
 /**
+ * Instrucciones de filosofía de recomendación.
+ * Nivel 1 = Práctica (sustitución progresiva)
+ * Nivel 2 = Estricta (cambio de hábito)
+ */
+const STRICTNESS_INSTRUCTIONS = {
+  1: `IMPORTANTE PARA LAS ALTERNATIVAS: Debes sugerir alternativas REALISTAS dentro de la MISMA categoría del producto. No recomiendes cambiar completamente de categoría. Por ejemplo: si es una gaseosa, sugiere una soda más saludable (con edulcorante natural, sin azúcar, etc.), NO sugiereas agua o té. Si es un snack, sugiere un snack más sano, no una fruta. El usuario quiere disfrutar de algo similar pero un poco más sano.`,
+
+  2: `IMPORTANTE PARA LAS ALTERNATIVAS: Debes sugerir la alternativa MÁS SALUDABLE posible, incluso si significa cambiar completamente de categoría. Por ejemplo: si es una gaseosa, puedes recomendar agua, té natural o infusiones. Si es un snack ultraprocesado, puedes recomendar fruta fresca o frutos secos. El usuario busca maximizar su salud.`,
+}
+
+/**
  * Prompts por nivel de detalle.
  * Nivel 1 = Directo, Nivel 2 = Equilibrado, Nivel 3 = Detallado.
  */
 const PROMPTS_BY_LEVEL = {
-  1: (product) => `Analiza brevemente: ${product.product_name || product.name}. Marca: ${product.brand || 'N/A'}. Nutriscore: ${product.nutriScore || 'N/A'}. Sé MUY breve: máximo 1 frase corta por campo. Responde ESTRICTAMENTE en JSON con llaves: "veredicto" (máximo 3 palabras), "analisis" (1 frase), "alternativa" (1 frase), "tip" (1 frase corta).`,
+  1: (product, strictnessInstr) => `Analiza brevemente: ${product.product_name || product.name}. Marca: ${product.brand || 'N/A'}. Nutriscore: ${product.nutriScore || 'N/A'}. ${strictnessInstr} Sé MUY breve: máximo 1 frase corta por campo. Responde ESTRICTAMENTE en JSON con llaves: "veredicto" (máximo 3 palabras), "analisis" (1 frase), "alternativa" (1 frase), "tip" (1 frase corta).`,
 
-  2: (product) => `Analiza este producto: ${product.product_name || product.name}. Marca: ${product.brand || 'N/A'}. Nutriscore: ${product.nutriScore || 'N/A'}. Ingredientes: ${product.ingredients || 'N/A'}. Nutrientes por 100g - Azúcares: ${product.nutriments?.sugar ?? 'N/A'}g, Sal: ${product.nutriments?.salt ?? 'N/A'}g, Grasa: ${product.nutriments?.fat ?? 'N/A'}g, Energía: ${product.nutriments?.energy ?? 'N/A'} kcal. Da un análisis moderado: 2-3 frases por campo. Responde ESTRICTAMENTE en JSON con llaves: "veredicto" (frase corta), "analisis" (2-3 frases, puntos clave), "alternativa" (1-2 frases), "tip" (1 frase práctica).`,
+  2: (product, strictnessInstr) => `Analiza este producto: ${product.product_name || product.name}. Marca: ${product.brand || 'N/A'}. Nutriscore: ${product.nutriScore || 'N/A'}. Ingredientes: ${product.ingredients || 'N/A'}. Nutrientes por 100g - Azúcares: ${product.nutriments?.sugar ?? 'N/A'}g, Sal: ${product.nutriments?.salt ?? 'N/A'}g, Grasa: ${product.nutriments?.fat ?? 'N/A'}g, Energía: ${product.nutriments?.energy ?? 'N/A'} kcal. ${strictnessInstr} Da un análisis moderado: 2-3 frases por campo. Responde ESTRICTAMENTE en JSON con llaves: "veredicto" (frase corta), "analisis" (2-3 frases, puntos clave), "alternativa" (1-2 frases), "tip" (1 frase práctica).`,
 
-  3: (product) => `Eres un nutricionista experto. Analiza en profundidad este producto: ${product.product_name || product.name}. Marca: ${product.brand || 'N/A'}. Nutriscore: ${product.nutriScore || 'N/A'}. Ingredientes: ${product.ingredients || 'N/A'}. Nutrientes por 100g - Azúcares: ${product.nutriments?.sugar ?? 'N/A'}g, Sal: ${product.nutriments?.salt ?? 'N/A'}g, Grasa: ${product.nutriments?.fat ?? 'N/A'}g, Energía: ${product.nutriments?.energy ?? 'N/A'} kcal. Da un análisis detallado y experto. Responde ESTRICTAMENTE en JSON con llaves: "veredicto" (frase descriptiva), "analisis" (análisis completo de ingredientes y nutrientes, impacto en salud), "alternativa" (sugerencia detallada con producto específico), "tip" (consejo práctico y educativo).`,
+  3: (product, strictnessInstr) => `Eres un nutricionista experto. Analiza en profundidad este producto: ${product.product_name || product.name}. Marca: ${product.brand || 'N/A'}. Nutriscore: ${product.nutriScore || 'N/A'}. Ingredientes: ${product.ingredients || 'N/A'}. Nutrientes por 100g - Azúcares: ${product.nutriments?.sugar ?? 'N/A'}g, Sal: ${product.nutriments?.salt ?? 'N/A'}g, Grasa: ${product.nutriments?.fat ?? 'N/A'}g, Energía: ${product.nutriments?.energy ?? 'N/A'} kcal. ${strictnessInstr} Da un análisis detallado y experto. Responde ESTRICTAMENTE en JSON con llaves: "veredicto" (frase descriptiva), "analisis" (análisis completo de ingredientes y nutrientes, impacto en salud), "alternativa" (sugerencia detallada con producto específico), "tip" (consejo práctico y educativo).`,
 }
 
 /**
  * getProductAnalysis
- * Diagnóstico dinámico de modelos con nivel de detalle configurable.
+ * Diagnóstico dinámico de modelos con nivel de detalle y filosofía configurables.
  * @param {object} product - Producto a analizar
  * @param {number} detailLevel - Nivel de detalle (1, 2 o 3). Default: 2
+ * @param {number} strictnessLevel - Nivel de estrictez (1 = práctica, 2 = estricta). Default: 1
  */
-export async function getProductAnalysis(product, detailLevel = 2) {
+export async function getProductAnalysis(product, detailLevel = 2, strictnessLevel = 1) {
   if (!product || (!product.barcode && !product.name)) return null
 
-  // 1. Check Cache (solo si el nivel coincide para evitar resultados inapropiados)
+  // 1. Check Cache
   try {
-    const cacheKey = `ai_analysis_l${detailLevel}`
     const { data: cached } = await supabase
       .from('global_products')
       .select('ai_analysis')
@@ -34,8 +45,8 @@ export async function getProductAnalysis(product, detailLevel = 2) {
     if (cached?.ai_analysis) {
       try {
         const parsed = JSON.parse(cached.ai_analysis)
-        // Si el caché tiene el nivel almacenado y coincide, usarlo
-        if (parsed._level === detailLevel) return parsed
+        // Solo usar caché si el nivel Y la filosofía coinciden
+        if (parsed._level === detailLevel && parsed._strictness === strictnessLevel) return parsed
       } catch (_) { /* cache inválido, seguir */ }
     }
   } catch (err) {
@@ -56,7 +67,7 @@ export async function getProductAnalysis(product, detailLevel = 2) {
   const apiKey = import.meta.env.VITE_GEMINI_API_KEY
 
   try {
-    console.log(`[aiAdvisor] Nivel de detalle: ${detailLevel}`)
+    console.log(`[aiAdvisor] Nivel de detalle: ${detailLevel}, Filosofía: ${strictnessLevel === 1 ? 'Práctica' : 'Estricta'}`)
     const modelsRes = await fetch(`https://generativelanguage.googleapis.com/v1/models?key=${apiKey}`)
     const modelsData = await modelsRes.json()
 
@@ -70,10 +81,12 @@ export async function getProductAnalysis(product, detailLevel = 2) {
 
     console.log(`[aiAdvisor] Modelo: ${modelToUse}`)
 
-    // Seleccionar prompt según nivel
+    // Seleccionar prompt según nivel y filosofía
     const level = [1, 2, 3].includes(detailLevel) ? detailLevel : 2
+    const strictness = [1, 2].includes(strictnessLevel) ? strictnessLevel : 1
+    const strictnessInstr = STRICTNESS_INSTRUCTIONS[strictness]
     const promptFn = PROMPTS_BY_LEVEL[level]
-    const prompt = promptFn(fullProduct)
+    const prompt = promptFn(fullProduct, strictnessInstr)
 
     const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/${modelToUse}:generateContent?key=${apiKey}`, {
       method: 'POST',
@@ -90,8 +103,9 @@ export async function getProductAnalysis(product, detailLevel = 2) {
       const jsonStr = text.replace(/```json|```/gi, '').trim()
       const analysis = JSON.parse(jsonStr)
 
-      // Guardar el nivel junto con el análisis para distinguir caché
+      // Guardar nivel y filosofía junto con el análisis para distinguir caché
       analysis._level = level
+      analysis._strictness = strictness
 
       // Save Cache
       if (product.barcode) {

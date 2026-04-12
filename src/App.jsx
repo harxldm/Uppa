@@ -397,24 +397,32 @@ function MainApp({ preferences = { currency: 'COP' }, onPrefsUpdate }) {
             product={analyzingProduct} 
             onClose={() => setAnalyzingProduct(null)}
             aiDetailLevel={preferences?.ai_detail_level || 2}
+            aiStrictnessLevel={preferences?.ai_strictness_level || 1}
           />
         )}
 
         {aiSettingsOpen && (
           <AiSettingsModal
             currentLevel={preferences?.ai_detail_level || 2}
-            onSave={async (level) => {
+            currentStrictness={preferences?.ai_strictness_level || 1}
+            onboardingCompleted={!!preferences?.ai_onboarding_completed}
+            onSave={async (level, strictness) => {
               try {
-                const updated = await updateUserPreferences({ ai_detail_level: level })
+                const updated = await updateUserPreferences({
+                  ai_detail_level: level,
+                  ai_strictness_level: strictness,
+                  ai_onboarding_completed: true,
+                })
                 onPrefsUpdate(updated)
               } catch (err) {
-                console.error('Error saving AI level:', err)
+                console.error('Error saving AI settings:', err)
               }
               setAiSettingsOpen(false)
             }}
             onClose={() => setAiSettingsOpen(false)}
           />
         )}
+
 
         {view === VIEW.SCANNER && (
           <div className="fixed inset-0 z-30 bg-black/80 backdrop-blur-sm flex flex-col justify-end animate-fade-in">
